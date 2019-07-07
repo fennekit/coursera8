@@ -1,0 +1,109 @@
+---
+title: "Qualatitive prediction of exercise execution"
+author: "Erik Konijnenburg"
+date: "7/6/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Summary
+
+In this report we describe the approach of building a model for the qualative prediction of exercise execution. We compare a simple tree model and a random forest based model.
+
+## Exploratory data analysis
+
+First we load the data into a dataframe. The data training data was downloaded from (https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv)[https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv]. The testing data was downloaded from (https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv)[https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv].
+ 
+```{r echo=FALSE}
+
+myData <- read.csv(file="./pml-training.csv", header=TRUE, sep=",", na.strings=c("","NA") )
+testing <- read.csv(file="./pml-testing.csv", header=TRUE, sep=",", na.strings=c("","NA") )
+
+```
+
+When we inspect the data of the training set we see that there are rows which are less sparse then others. These rows appear to be a summary row of the previous time slice . These are of no use to us since the predictors we have in the testing dataset do not contain these summary values. After excluding these rows  there are a lot of columns containing no data which can be removed. 
+
+Finally we can ignore the first 7 columns (e.g. user_name, timestamp data and window data) since the do not contain any values which are of use for building a model of use.
+
+## Data cleaning and preparation
+
+Let us first remove the summary rows which are indicated by the 'new_window == yes' column and then remove all the columns that do not contain data or columns with predictive value.
+
+```{r }
+library(dplyr)
+
+not_all_na <- function(x) any(!is.na(x))
+
+filteredData <- myData %>% filter(new_window != 'yes') %>% select_if(not_all_na)
+filteredData <- filteredData[, -c(1:7)]
+
+dim(myData)
+dim(filteredData)
+```
+
+The filtered dataset has 107 less columns compared to the initial dataset. Next we split the data into a training and a test set.
+
+```{r echo=FALSE}
+library(caret)
+
+set.seed(1215)
+
+intrain <- createDataPartition(y=filteredData$classe, p=0.7, list=FALSE)
+training <- filteredData[intrain,]
+test <- filteredData[-intrain,]
+```
+
+
+## Prediction with trees
+First we we try to build a model based use a decision tree. Using the caret package we build a tree using the 'rpart' method. This builds a tree using Recursive Partitioning Decision Trees. We are using 5 fold crossvalidation to train the model.
+
+```{r echo=FALSE}
+
+fc <- trainControl(method="cv", 5, verboseIter = TRUE)
+modFitRpart <- train(classe ~ ., data=training, method='rpart', trControl = fc )
+modFitRpart
+```
+
+The accuracy of the selected model is 0.5028605 which is not good. When printing the confusionMatrix for predicted values shows that the predictive value of the model pretty bad.
+ 
+```{r }
+predRpart <- predict(modFitRpart, training)
+confusionMatrix(predRpart, training$classe)
+
+```
+
+## Prediction with random forests
+Next we build a model using the random forests method. Again, we are using 5 fold crossvalidation to train the model.
+
+```{r }
+fc <- trainControl(method="cv", 5, verboseIter = TRUE)
+modFit <- train(classe ~ ., data=training, method='rf', trControl = fc )
+modFit
+```
+The accuracy of the of the selected model is 0.9921949 so this model be considered as good model. When we print the confusion matrix we see that the model has perfect predictive capabilities 
+
+
+```{r}
+pred <- predict(modFit, training)
+confusionMatrix(pred, training$classe)
+
+```
+
+To find the predicted values for the supplied testing set we find the following results.
+
+```{r include=TRUE}
+predict(modFit, testing)
+```
+
+## Conclusion
+
+Building a predictor based on simple decision trees results in a model with limited predictive value. If, however we use random forests we obtain a predictor that has perfect predictive value.
+
+## Reference
+The data for this project come from this source: [http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har](http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har). 
+
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
