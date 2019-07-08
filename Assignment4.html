@@ -413,14 +413,22 @@ dim(myData)</code></pre>
 <pre class="r"><code>dim(filteredData)</code></pre>
 <pre><code>## [1] 19216    53</code></pre>
 <p>The filtered dataset has 107 less columns compared to the initial dataset. Next we split the data into a training and a test set.</p>
+<pre class="r"><code>library(caret)</code></pre>
 <pre><code>## Loading required package: lattice</code></pre>
 <pre><code>## Loading required package: ggplot2</code></pre>
 <pre><code>## Warning in as.POSIXlt.POSIXct(Sys.time()): unknown timezone 'zone/tz/2019a.
 ## 1.0/zoneinfo/Europe/Amsterdam'</code></pre>
+<pre class="r"><code>set.seed(1215)
+
+intrain &lt;- createDataPartition(y=filteredData$classe, p=0.7, list=FALSE)
+training &lt;- filteredData[intrain,]
+test &lt;- filteredData[-intrain,]</code></pre>
 </div>
 <div id="prediction-with-trees" class="section level2">
 <h2>Prediction with trees</h2>
 <p>First we we try to build a model based use a decision tree. Using the caret package we build a tree using the ‘rpart’ method. This builds a tree using Recursive Partitioning Decision Trees. We are using 5 fold crossvalidation to train the model.</p>
+<pre class="r"><code>fc &lt;- trainControl(method=&quot;cv&quot;, 5, verboseIter = TRUE)
+modFitRpart &lt;- train(classe ~ ., data=training, method='rpart', trControl = fc )</code></pre>
 <pre><code>## + Fold1: cp=0.03648 
 ## - Fold1: cp=0.03648 
 ## + Fold2: cp=0.03648 
@@ -434,6 +442,7 @@ dim(myData)</code></pre>
 ## Aggregating results
 ## Selecting tuning parameters
 ## Fitting cp = 0.0365 on full training set</code></pre>
+<pre class="r"><code>modFitRpart</code></pre>
 <pre><code>## CART 
 ## 
 ## 13453 samples

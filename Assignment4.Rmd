@@ -47,7 +47,7 @@ dim(filteredData)
 
 The filtered dataset has 107 less columns compared to the initial dataset. Next we split the data into a training and a test set.
 
-```{r echo=FALSE}
+```{r }
 library(caret)
 
 set.seed(1215)
@@ -61,7 +61,7 @@ test <- filteredData[-intrain,]
 ## Prediction with trees
 First we we try to build a model based use a decision tree. Using the caret package we build a tree using the 'rpart' method. This builds a tree using Recursive Partitioning Decision Trees. We are using 5 fold crossvalidation to train the model.
 
-```{r echo=FALSE}
+```{r }
 
 fc <- trainControl(method="cv", 5, verboseIter = TRUE)
 modFitRpart <- train(classe ~ ., data=training, method='rpart', trControl = fc )
